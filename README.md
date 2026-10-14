@@ -12,7 +12,7 @@ Cloudflare Tunnel should point at `http://handels-ratings:3000` on `homelab-netw
 
 Postgres data stays in the `postgres-data` volume. Review photos stay in the `uploads` volume. Set `SESSION_SECRET` in a `.env` file next to `docker-compose.yml` before anyone else can reach the app. Set `COOKIE_SECURE=true` if you serve it over HTTPS.
 
-The flavor list is a static copy of [Handel's all flavors](https://handelsicecream.com/all-flavors/). Fan favorites start marked as scooping. Turn the rest on when your shop has them.
+The flavor list is a static copy of [Handel's all flavors](https://handelsicecream.com/all-flavors/). Every flavor starts marked as scooping. Turn one off when the shop is out.
 
 ## Local development
 

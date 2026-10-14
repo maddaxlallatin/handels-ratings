@@ -11,7 +11,7 @@ export default async function FlavorsPage() {
   return (
     <div className="space-y-5">
       <PageIntro eyebrow="Menu" title="Every flavor on the card.">
-        Fan favorites start as scooping now. Mark the rest when your shop has them, or add one that isn’t listed.
+        Everything starts as scooping now. Mark a flavor unavailable when the shop is out, or add one that isn’t listed.
       </PageIntro>
       <FlavorBrowser
         signedIn={Boolean(user)}
