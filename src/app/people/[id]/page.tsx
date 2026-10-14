@@ -1,13 +1,14 @@
 import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
+import { NameForm } from "@/components/name-form";
 import { PageIntro } from "@/components/page-intro";
 import { PreferenceForm } from "@/components/preference-form";
+import { ReviewCard } from "@/components/review-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { baseLabel } from "@/lib/bases";
 import { currentUser, loadCrew, userById } from "@/lib/data";
-import { formatScore, formatVisit } from "@/lib/format";
+import { formatScore } from "@/lib/format";
 
 export default async function PersonPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -85,6 +86,16 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
 
       {viewer?.id === person.id ? (
         <section className="space-y-3">
+          <h2 className="text-xl font-semibold">Your name</h2>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Capitalization does not create a second account. The name you save is what everyone sees.
+          </p>
+          <NameForm name={person.name} />
+        </section>
+      ) : null}
+
+      {viewer?.id === person.id ? (
+        <section className="space-y-3">
           <h2 className="text-xl font-semibold">Your flavor preferences</h2>
           <p className="text-sm leading-relaxed text-muted-foreground">
             Everyone can see these. They drive the “for you” suggestions.
@@ -125,30 +136,23 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
           mine.map((review) => {
             const flavor = flavorById.get(review.flavorId);
             return (
-              <Card key={review.id}>
-                <CardHeader className="gap-1">
-                  <CardTitle className="text-lg">
-                    <Link href={flavor ? `/flavors/${flavor.slug}` : "/flavors"}>{flavor?.name ?? "Flavor"}</Link>
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {review.score}/10 · {formatVisit(review.visitedOn)}
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-base leading-relaxed">{review.note}</p>
-                  {review.imagePath ? (
-                    <div className="relative aspect-4/3 overflow-hidden rounded-xl">
-                      <Image
-                        src={`/media/${review.imagePath}`}
-                        alt={flavor ? `Photo of ${flavor.name}` : "Review photo"}
-                        fill
-                        unoptimized
-                        className="object-cover"
-                      />
-                    </div>
-                  ) : null}
-                </CardContent>
-              </Card>
+              <ReviewCard
+                key={review.id}
+                canEdit={viewer?.id === person.id}
+                returnTo="profile"
+                flavorId={review.flavorId}
+                flavorSlug={flavor?.slug ?? ""}
+                flavorName={flavor?.name ?? "Flavor"}
+                authorName={person.name}
+                imageAlt={flavor ? `Photo of ${flavor.name}` : "Review photo"}
+                review={{
+                  id: review.id,
+                  score: review.score,
+                  note: review.note,
+                  visitedOn: review.visitedOn.slice(0, 10),
+                  imagePath: review.imagePath,
+                }}
+              />
             );
           })
         )}

@@ -1,7 +1,7 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -133,63 +133,134 @@ export async function toggleAvailability(formData: FormData): Promise<void> {
   revalidatePath("/recommend");
 }
 
+export async function renameAccount(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const userId = await requireUserId();
+  if (typeof userId !== "number") return userId;
+  const name = cleanName(formData.get("name"));
+  if (name.length < 1 || name.length > 40) {
+    return { error: "Use a name between 1 and 40 characters." };
+  }
+  if (/[%_]/.test(name)) {
+    return { error: "Skip percent signs and underscores in names." };
+  }
+
+  const { users } = await loadCrew();
+  const taken = users.find((user) => user.id !== userId && user.name.toLowerCase() === name.toLowerCase());
+  if (taken) return { error: "Someone already uses that name." };
+
+  await db.orm.public.User.where({ id: userId }).update({ name });
+  revalidatePath("/");
+  revalidatePath("/people");
+  revalidatePath(`/people/${userId}`);
+  redirect(`/people/${userId}`);
+}
+
 export async function addReview(_previous: ActionState, formData: FormData): Promise<ActionState> {
   const userId = await requireUserId();
   if (typeof userId !== "number") return userId;
+  const parsed = readReviewFields(formData);
+  if ("error" in parsed) return parsed;
+
+  const { users, flavors } = await loadCrew();
+  const user = users.find((item) => item.id === userId);
+  const flavor = flavors.find((item) => item.id === parsed.flavorId);
+  if (!user || !flavor) return { error: "That flavor or person is missing." };
+
+  const stored = await storeImage(parsed.image);
+  if ("error" in stored) return stored;
+
+  await db.orm.public.Review.create({
+    userId,
+    flavorId: parsed.flavorId,
+    score: parsed.score,
+    note: parsed.note,
+    visitedOn: parsed.visitedOn,
+    ...(stored.path ? { imagePath: stored.path } : {}),
+  });
+
+  refreshReviewPages(flavor.slug, user.id);
+  redirect(`/flavors/${flavor.slug}`);
+}
+
+export async function updateReview(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const userId = await requireUserId();
+  if (typeof userId !== "number") return userId;
+  const reviewId = Number(formData.get("reviewId"));
+  if (!Number.isInteger(reviewId)) return { error: "That review is missing." };
+
+  const parsed = readReviewFields(formData);
+  if ("error" in parsed) return parsed;
+
+  const review = await db.orm.public.Review.where({ id: reviewId }).first();
+  if (!review || review.userId !== userId) return { error: "You can only edit your own reviews." };
+
+  const { flavors } = await loadCrew();
+  const flavor = flavors.find((item) => item.id === review.flavorId);
+  if (!flavor) return { error: "That flavor is missing." };
+
+  const stored = await storeImage(parsed.image);
+  if ("error" in stored) return stored;
+
+  const removeImage = formData.get("removeImage") === "on";
+  const nextImage = stored.path ?? (removeImage ? null : review.imagePath);
+  await db.orm.public.Review.where({ id: review.id }).update({
+    score: parsed.score,
+    note: parsed.note,
+    visitedOn: parsed.visitedOn,
+    imagePath: nextImage,
+  });
+  if (review.imagePath && review.imagePath !== nextImage) {
+    await removeUpload(review.imagePath);
+  }
+
+  refreshReviewPages(flavor.slug, userId);
+  const returnTo = formData.get("returnTo");
+  redirect(returnTo === "profile" ? `/people/${userId}` : `/flavors/${flavor.slug}`);
+}
+
+function readReviewFields(formData: FormData): { error: string } | {
+  flavorId: number;
+  score: number;
+  note: string;
+  visitedOn: string;
+  image: File | null;
+} {
   const flavorId = Number(formData.get("flavorId"));
   const score = Number(formData.get("score"));
   const note = cleanName(formData.get("note"));
   const visitedOn = cleanName(formData.get("visitedOn"));
-
-  if (!Number.isInteger(flavorId)) {
-    return { error: "Pick a flavor while you are signed in." };
-  }
-  if (!Number.isInteger(score) || score < 1 || score > 10) {
-    return { error: "Score it from 1 to 10." };
-  }
+  if (!Number.isInteger(flavorId)) return { error: "Pick a flavor while you are signed in." };
+  if (!Number.isInteger(score) || score < 1 || score > 10) return { error: "Score it from 1 to 10." };
   if (note.length < 2 || note.length > 1000) {
     return { error: "The note is required. A sentence or two is plenty." };
   }
-  if (!isVisitDate(visitedOn)) {
-    return { error: "Pick the day you ate it." };
-  }
-
-  const { users, flavors } = await loadCrew();
-  const user = users.find((item) => item.id === userId);
-  const flavor = flavors.find((item) => item.id === flavorId);
-  if (!user || !flavor) return { error: "That flavor or person is missing." };
-
-  let imagePath: string | undefined;
+  if (!isVisitDate(visitedOn)) return { error: "Pick the day you ate it." };
   const image = formData.get("image");
-  if (image instanceof File && image.size > 0) {
-    if (image.size > 5 * 1024 * 1024) {
-      return { error: "Photos need to be 5 MB or smaller." };
-    }
-    const extension = extensionFor(image);
-    if (!extension) {
-      return { error: "Use a JPEG, PNG, WebP, or GIF." };
-    }
-    const filename = `${randomUUID()}${extension}`;
-    await mkdir(uploadDir(), { recursive: true });
-    await writeFile(path.join(uploadDir(), filename), Buffer.from(await image.arrayBuffer()));
-    imagePath = filename;
-  }
+  return { flavorId, score, note, visitedOn, image: image instanceof File && image.size > 0 ? image : null };
+}
 
-  await db.orm.public.Review.create({
-    userId,
-    flavorId,
-    score,
-    note,
-    visitedOn,
-    ...(imagePath ? { imagePath } : {}),
-  });
+async function storeImage(image: File | null): Promise<{ error: string } | { path?: string }> {
+  if (!image) return {};
+  if (image.size > 5 * 1024 * 1024) return { error: "Photos need to be 5 MB or smaller." };
+  const extension = extensionFor(image);
+  if (!extension) return { error: "Use a JPEG, PNG, WebP, or GIF." };
+  const filename = `${randomUUID()}${extension}`;
+  await mkdir(uploadDir(), { recursive: true });
+  await writeFile(path.join(uploadDir(), filename), Buffer.from(await image.arrayBuffer()));
+  return { path: filename };
+}
 
-  revalidatePath(`/flavors/${flavor.slug}`);
-  revalidatePath(`/people/${user.id}`);
+function refreshReviewPages(slug: string, userId: number) {
+  revalidatePath(`/flavors/${slug}`);
+  revalidatePath(`/people/${userId}`);
   revalidatePath("/top");
   revalidatePath("/recommend");
   revalidatePath("/");
-  redirect(`/flavors/${flavor.slug}`);
+}
+
+async function removeUpload(filename: string) {
+  if (!/^[\w.-]+$/.test(filename)) return;
+  await unlink(path.join(uploadDir(), filename)).catch(() => undefined);
 }
 
 function extensionFor(file: File): string | null {

@@ -1,15 +1,13 @@
-import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { PageIntro } from "@/components/page-intro";
+import { ReviewCard } from "@/components/review-card";
 import { ReviewForm } from "@/components/review-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toggleAvailability } from "@/app/actions";
 import { baseLabel } from "@/lib/bases";
 import { currentUser, flavorBySlug, loadCrew } from "@/lib/data";
-import { formatScore, formatVisit } from "@/lib/format";
+import { formatScore } from "@/lib/format";
 
 export default async function FlavorPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -61,32 +59,24 @@ export default async function FlavorPage({ params }: { params: Promise<{ slug: s
           flavorReviews.map((review) => {
             const person = people.get(review.userId);
             return (
-              <Card key={review.id}>
-                <CardHeader className="flex-row items-center justify-between gap-3">
-                  <p className="text-2xl font-semibold">{review.score}/10</p>
-                  <p className="text-right text-sm text-muted-foreground">
-                    <Link href={person ? `/people/${person.id}` : "/people"} className="font-medium text-foreground">
-                      {person?.name ?? "Someone"}
-                    </Link>
-                    <br />
-                    {formatVisit(review.visitedOn)}
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-base leading-relaxed">{review.note}</p>
-                  {review.imagePath ? (
-                    <div className="relative aspect-4/3 overflow-hidden rounded-xl">
-                      <Image
-                        src={`/media/${review.imagePath}`}
-                        alt={`Photo from a ${flavor.name} review`}
-                        fill
-                        unoptimized
-                        className="object-cover"
-                      />
-                    </div>
-                  ) : null}
-                </CardContent>
-              </Card>
+              <ReviewCard
+                key={review.id}
+                canEdit={user?.id === review.userId}
+                returnTo="flavor"
+                flavorId={flavor.id}
+                flavorSlug={flavor.slug}
+                flavorName={flavor.name}
+                authorId={person?.id}
+                authorName={person?.name ?? "Someone"}
+                imageAlt={`Photo from a ${flavor.name} review`}
+                review={{
+                  id: review.id,
+                  score: review.score,
+                  note: review.note,
+                  visitedOn: review.visitedOn.slice(0, 10),
+                  imagePath: review.imagePath,
+                }}
+              />
             );
           })
         )}
