@@ -1,0 +1,57 @@
+// use prisma-8
+
+enum preference_kind {
+  @@type("pg/text@1")
+  like    = "like"
+  dislike = "dislike"
+}
+
+model User {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  createdAt   TimestamptzString @default(now())
+  reviews     Review[]
+  preferences Preference[]
+}
+
+model Flavor {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  slug        String   @unique
+  description String
+  available   Boolean  @default(true)
+  bases       String[]
+  createdAt   TimestamptzString @default(now())
+  reviews     Review[]
+
+  @@index([available])
+}
+
+model Preference {
+  id     Int             @id @default(autoincrement())
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int
+  base   String
+  kind   preference_kind
+
+  @@unique([userId, base])
+  @@index([userId])
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  flavor    Flavor   @relation(fields: [flavorId], references: [id], onDelete: Cascade)
+  flavorId  Int
+  score     Int
+  note      String
+  imagePath String?
+  visitedOn DateString
+  createdAt TimestamptzString @default(now())
+
+  @@index([userId])
+  @@index([flavorId])
+  @@index([visitedOn])
+  @@check(expression: "score >= 1 AND score <= 10", name: "review_score_range")
+}

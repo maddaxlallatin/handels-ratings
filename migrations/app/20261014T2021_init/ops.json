@@ -1,0 +1,664 @@
+[
+  {
+    "id": "schema.public",
+    "label": "Create schema \"public\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Create schema \"public\"",
+        "sql": "CREATE SCHEMA IF NOT EXISTS \"public\"",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "table.Flavor",
+    "label": "Create table \"Flavor\"",
+    "summary": "Creates table \"Flavor\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Flavor"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Flavor\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Flavor\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Flavor\"",
+        "sql": "CREATE TABLE \"public\".\"Flavor\" (\n  \"available\" bool DEFAULT true NOT NULL,\n  \"bases\" text[] NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"description\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"name\" text NOT NULL,\n  \"slug\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"Flavor_bases_elem_not_null_5d2da1db\" CHECK (array_position(\"bases\", NULL) IS NULL)\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Flavor\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Flavor\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Preference",
+    "label": "Create table \"Preference\"",
+    "summary": "Creates table \"Preference\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Preference"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Preference\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Preference\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Preference\"",
+        "sql": "CREATE TABLE \"public\".\"Preference\" (\n  \"base\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"kind\" text NOT NULL,\n  \"userId\" int4 NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"Preference_kind_check_5582e182\" CHECK (\"kind\" IN ('like', 'dislike'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Preference\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Preference\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Review",
+    "label": "Create table \"Review\"",
+    "summary": "Creates table \"Review\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Review"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Review\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Review\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Review\"",
+        "sql": "CREATE TABLE \"public\".\"Review\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"flavorId\" int4 NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"imagePath\" text,\n  \"note\" text NOT NULL,\n  \"score\" int4 NOT NULL,\n  \"userId\" int4 NOT NULL,\n  \"visitedOn\" date NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"review_score_range_f9c54a13\" CHECK (score >= 1 AND score <= 10)\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Review\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Review\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.User",
+    "label": "Create table \"User\"",
+    "summary": "Creates table \"User\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"User\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"User\"",
+        "sql": "CREATE TABLE \"public\".\"User\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"name\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"User\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.Flavor.Flavor_name_key",
+    "label": "Add unique constraint on \"Flavor\" (name)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Flavor_name_key",
+        "table": "Flavor"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Flavor_name_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Flavor_name_key",
+          "public",
+          "\"public\".\"Flavor\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Flavor_name_key\"",
+        "sql": "ALTER TABLE \"public\".\"Flavor\" ADD CONSTRAINT \"Flavor_name_key\" UNIQUE (\"name\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"Flavor_name_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Flavor_name_key",
+          "public",
+          "\"public\".\"Flavor\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.Flavor.Flavor_slug_key",
+    "label": "Add unique constraint on \"Flavor\" (slug)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Flavor_slug_key",
+        "table": "Flavor"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Flavor_slug_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Flavor_slug_key",
+          "public",
+          "\"public\".\"Flavor\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Flavor_slug_key\"",
+        "sql": "ALTER TABLE \"public\".\"Flavor\" ADD CONSTRAINT \"Flavor_slug_key\" UNIQUE (\"slug\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"Flavor_slug_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Flavor_slug_key",
+          "public",
+          "\"public\".\"Flavor\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.Preference.Preference_userId_base_key",
+    "label": "Add unique constraint on \"Preference\" (userId, base)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Preference_userId_base_key",
+        "table": "Preference"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Preference_userId_base_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Preference_userId_base_key",
+          "public",
+          "\"public\".\"Preference\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Preference_userId_base_key\"",
+        "sql": "ALTER TABLE \"public\".\"Preference\" ADD CONSTRAINT \"Preference_userId_base_key\" UNIQUE (\"userId\", \"base\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"Preference_userId_base_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Preference_userId_base_key",
+          "public",
+          "\"public\".\"Preference\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.User.User_name_key",
+    "label": "Add unique constraint on \"User\" (name)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "User_name_key",
+        "table": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"User_name_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "User_name_key",
+          "public",
+          "\"public\".\"User\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"User_name_key\"",
+        "sql": "ALTER TABLE \"public\".\"User\" ADD CONSTRAINT \"User_name_key\" UNIQUE (\"name\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"User_name_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "User_name_key",
+          "public",
+          "\"public\".\"User\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Flavor.Flavor_available_idx_1b9f4739",
+    "label": "Create index \"Flavor_available_idx_1b9f4739\" on \"Flavor\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Flavor_available_idx_1b9f4739",
+        "table": "Flavor"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Flavor_available_idx_1b9f4739\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Flavor_available_idx_1b9f4739\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Flavor_available_idx_1b9f4739\"",
+        "sql": "CREATE INDEX \"Flavor_available_idx_1b9f4739\" ON \"public\".\"Flavor\" (\"available\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Flavor_available_idx_1b9f4739\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Flavor_available_idx_1b9f4739\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Preference.Preference_userId_idx_a489d58a",
+    "label": "Create index \"Preference_userId_idx_a489d58a\" on \"Preference\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Preference_userId_idx_a489d58a",
+        "table": "Preference"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Preference_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Preference_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Preference_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"Preference_userId_idx_a489d58a\" ON \"public\".\"Preference\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Preference_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Preference_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Review.Review_flavorId_idx_aa9bfbfb",
+    "label": "Create index \"Review_flavorId_idx_aa9bfbfb\" on \"Review\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Review_flavorId_idx_aa9bfbfb",
+        "table": "Review"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Review_flavorId_idx_aa9bfbfb\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Review_flavorId_idx_aa9bfbfb\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Review_flavorId_idx_aa9bfbfb\"",
+        "sql": "CREATE INDEX \"Review_flavorId_idx_aa9bfbfb\" ON \"public\".\"Review\" (\"flavorId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Review_flavorId_idx_aa9bfbfb\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Review_flavorId_idx_aa9bfbfb\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Review.Review_userId_idx_a489d58a",
+    "label": "Create index \"Review_userId_idx_a489d58a\" on \"Review\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Review_userId_idx_a489d58a",
+        "table": "Review"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Review_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Review_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Review_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"Review_userId_idx_a489d58a\" ON \"public\".\"Review\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Review_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Review_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Review.Review_visitedOn_idx_828c8027",
+    "label": "Create index \"Review_visitedOn_idx_828c8027\" on \"Review\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Review_visitedOn_idx_828c8027",
+        "table": "Review"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Review_visitedOn_idx_828c8027\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Review_visitedOn_idx_828c8027\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Review_visitedOn_idx_828c8027\"",
+        "sql": "CREATE INDEX \"Review_visitedOn_idx_828c8027\" ON \"public\".\"Review\" (\"visitedOn\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Review_visitedOn_idx_828c8027\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Review_visitedOn_idx_828c8027\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Preference.Preference_userId_fkey",
+    "label": "Add foreign key \"Preference_userId_fkey\" on \"Preference\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Preference_userId_fkey",
+        "table": "Preference"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Preference_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Preference_userId_fkey",
+          "public",
+          "\"public\".\"Preference\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Preference_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Preference\"\nADD CONSTRAINT \"Preference_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Preference_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Preference_userId_fkey",
+          "public",
+          "\"public\".\"Preference\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Review.Review_userId_fkey",
+    "label": "Add foreign key \"Review_userId_fkey\" on \"Review\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Review_userId_fkey",
+        "table": "Review"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Review_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Review_userId_fkey",
+          "public",
+          "\"public\".\"Review\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Review_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Review\"\nADD CONSTRAINT \"Review_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Review_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Review_userId_fkey",
+          "public",
+          "\"public\".\"Review\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Review.Review_flavorId_fkey",
+    "label": "Add foreign key \"Review_flavorId_fkey\" on \"Review\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Review_flavorId_fkey",
+        "table": "Review"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Review_flavorId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Review_flavorId_fkey",
+          "public",
+          "\"public\".\"Review\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Review_flavorId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Review\"\nADD CONSTRAINT \"Review_flavorId_fkey\"\nFOREIGN KEY (\"flavorId\")\nREFERENCES \"public\".\"Flavor\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Review_flavorId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Review_flavorId_fkey",
+          "public",
+          "\"public\".\"Review\""
+        ]
+      }
+    ]
+  }
+]
