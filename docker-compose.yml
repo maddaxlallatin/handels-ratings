@@ -30,8 +30,17 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      default: {}
+      homelab-network:
+        aliases:
+          - handels-ratings
     restart: unless-stopped
 
 volumes:
   postgres-data:
   uploads:
+
+networks:
+  homelab-network:
+    external: true
